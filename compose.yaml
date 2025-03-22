@@ -5,7 +5,7 @@ services:
     entrypoint:
       - bash
       - -c
-      - 'TIMESTAMP=$(date +%Y%m%d_%H%M%S); BACKUP_DIR="/host-tmp/blueprint_backup_$TIMESTAMP"; function log() { echo "[INIT] $1"; }; if [ -f "/host-mount/blueprint.sh" ] && [ -d "/host-mount/.blueprint" ]; then log "Already initialized, skipping"; else log "Starting initialization process"; if [ -d "/host-mount" ] && [ "$(ls -A /host-mount 2>/dev/null)" ]; then mkdir -p "$BACKUP_DIR" && log "Backing up existing files to $BACKUP_DIR" && cp -rf /host-mount/. "$BACKUP_DIR/" && log "Backup completed"; fi; log "Copying files to target directory" && cp -rf /app/. /host-mount/ && log "Copy operation completed" && log "Initialization successfully completed"; fi'
+      - 'TIMESTAMP=$(date +%Y%m%d_%H%M%S); BACKUP_DIR="/host-tmp/blueprint_backup_$TIMESTAMP"; function log() { echo "[INIT] $1"; }; if [ -f "/host-mount/blueprint.sh" ] && [ -d "/host-mount/.blueprint" ]; then log "Already initialized, skipping"; else log "Starting initialization process"; if [ -d "/host-mount" ] && [ "$(ls -A /host-mount 2>/dev/null)" ]; then mkdir -p "$BACKUP_DIR" && log "Backing up existing files to $BACKUP_DIR" && cp -rf /host-mount/. "$BACKUP_DIR/" && log "Backup completed"; fi; log "Copying files to target directory" && cp -rf /app/. /host-mount/ && log "Copy operation completed"; chmod -R 777 /host-mount/storage/ /host-mount/bootstrap/ && log "Permission setting operation completed" && log "Initialization successfully completed"; fi'
     volumes:
       - "${BASE_DIR}/data/app/:/host-mount"
       - "/tmp:/host-tmp"
