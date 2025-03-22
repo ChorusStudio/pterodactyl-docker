@@ -1,0 +1,47 @@
+name: pterodactyl
+services:
+  initializer:
+    image: ghcr.io/blueprintframework/blueprint:v1.11.10
+    entrypoint:
+      - bash
+      - -c
+      - 'TIMESTAMP=$(date +%Y%m%d_%H%M%S); BACKUP_DIR="/host-tmp/blueprint_backup_$TIMESTAMP"; function log() { echo "[INIT] $1"; }; if [ -f "/host-mount/blueprint.sh" ] && [ -d "/host-mount/.blueprint" ]; then log "Already initialized, skipping"; else log "Starting initialization process"; if [ -d "/host-mount" ] && [ "$(ls -A /host-mount 2>/dev/null)" ]; then mkdir -p "$BACKUP_DIR" && log "Backing up existing files to $BACKUP_DIR" && cp -rf /host-mount/. "$BACKUP_DIR/" && log "Backup completed"; fi; log "Copying files to target directory" && cp -rf /app/. /host-mount/ && log "Copy operation completed" && log "Initialization successfully completed"; fi'
+    volumes:
+      - "${BASE_DIR}/data/app/:/host-mount"
+      - "/tmp:/host-tmp"
+    networks:
+      - pterodactyl_stack
+  panel:
+    image: ghcr.io/blueprintframework/blueprint:v1.11.10
+    restart: always
+    ports:
+      - "${PANEL_PORT}:80"
+    depends_on:
+      initializer:
+        condition: service_completed_successfully
+    volumes:
+      - "${BASE_DIR}/data/var/:/app/var"
+      - "${BASE_DIR}/data/app/:/app"
+      - "${BASE_DIR}/config/nginx/:/etc/nginx/http.d/"
+      - "${BASE_DIR}/config/cert/:/etc/letsencrypt/live:ro"
+      - "${BASE_DIR}/log/:/app/storage/logs"
+      - "${BASE_DIR}/log/nginx:/var/log/nginx"
+      - "${BASE_DIR}/extension/:/blueprint_extensions"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:${PANEL_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - pterodactyl_stack
+
+networks:
+  pterodactyl_stack:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.20.0.0/24"
